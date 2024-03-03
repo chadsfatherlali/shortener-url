@@ -25,6 +25,11 @@ public class HomeController {
 	@Autowired
 	private UrlRepository repository;
 	
+	@GetMapping("/")
+    ResponseEntity<String> getHome() {
+		return ResponseEntity.ok("Gangnam Style");
+    }
+	
 	@GetMapping("/{urlId}")
     ResponseEntity<Void> getUrlRedirect(@PathVariable String urlId) {
 		UrlEntity urlObject = repository.findByUrlId(urlId);
