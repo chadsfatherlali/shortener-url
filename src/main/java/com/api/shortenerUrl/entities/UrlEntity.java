@@ -10,7 +10,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import jakarta.validation.constraints.NotBlank;
 
-
 @Document
 public class UrlEntity {
 	
