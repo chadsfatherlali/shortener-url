@@ -3,8 +3,10 @@ package com.api.shortenerUrl.controllers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -18,6 +20,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,13 +33,17 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.api.shortenerUrl.entities.UrlEntity;
+import com.api.shortenerUrl.responses.GenericResponse;
 import com.api.shortenerUrl.responses.GenericResponsePageable;
 import com.api.shortenerUrl.services.UrlService;
 import com.api.shortenerUrl.utils.Id;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 public class UrlControllerTest {
+	
+	Logger logger = LoggerFactory.getLogger(UrlControllerTest.class);
 	
 	@Autowired
 	private MockMvc mockMvc;
@@ -46,15 +54,18 @@ public class UrlControllerTest {
 	@Autowired
 	private UrlController controller;
 	
+	@Autowired
+	private ObjectMapper objectMapper;
+	
 	private GenericResponsePageable<List<UrlEntity>> urlPageableList = new GenericResponsePageable<List<UrlEntity>>();
 	private String idUrlFacebook = Id.generate();
 	private String idUrlGoogle = Id.generate();
 	private List<UrlEntity> urlList = new ArrayList<>();
+	private String domain = "https://agile-waters-42933-15aa8f254d4e.herokuapp.com/";
+	private Instant createdDate = Instant.now();
 	
 	@BeforeEach
 	void init() {
-		String domain = "https://agile-waters-42933-15aa8f254d4e.herokuapp.com/";
-		Instant createdDate = Instant.now();
 		UrlEntity urlEntityFacebook = new UrlEntity();
 		UrlEntity urlEntityGoogle = new UrlEntity();
 		
@@ -136,6 +147,42 @@ public class UrlControllerTest {
 			.andExpect(jsonPath("$.data").isMap())
 			.andExpect(jsonPath("$.data.content").isArray())
 			.andExpect(content().string(not(containsString("google"))));
+	}
+	
+	@Test
+	void shouldReturnAurlDocument() throws Exception {
+		GenericResponse<UrlEntity> response = new GenericResponse<UrlEntity>();
+		UrlEntity createUrl = new UrlEntity();
+		String longUrl = "https://www.google.com";
+		String shortUrl = domain + idUrlGoogle;
+		
+		createUrl.setShortUrl(shortUrl);
+		createUrl.setLongUrl(longUrl);
+		createUrl.setId(idUrlGoogle);
+		
+		response.setData(createUrl);
+		response.setErrorMessage(null);
+		response.setStatusCode(HttpStatus.OK);
+
+		when(service.addUrl(any())).thenReturn(response);
+		
+		logger.info("DEBUG:::::::>" + objectMapper.writeValueAsString(response));
+		
+		this.mockMvc.perform(post("/url")
+				.accept(MediaType.APPLICATION_JSON)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"longUrl\": \"https://www.xhamster.com\"}"))
+			.andDo(print())
+			.andExpect(status().isOk())
+			.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+			.andExpect(jsonPath("$.statusCode").exists())
+			.andExpect(jsonPath("$.statusCode").value("OK"))
+			.andExpect(jsonPath("$.errorMessage").doesNotExist())
+			.andExpect(jsonPath("$.data").exists())
+			.andExpect(jsonPath("$.data").isMap())
+			.andExpect(jsonPath("$.data.id").value(idUrlGoogle))
+			.andExpect(jsonPath("$.data.longUrl").value(longUrl))
+			.andExpect(jsonPath("$.data.shortUrl").value(shortUrl));
 	}
 	
 }
