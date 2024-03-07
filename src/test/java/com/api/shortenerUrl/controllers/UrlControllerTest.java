@@ -171,7 +171,7 @@ public class UrlControllerTest {
 		this.mockMvc.perform(post("/url")
 				.accept(MediaType.APPLICATION_JSON)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"longUrl\": \"https://www.xhamster.com\"}"))
+				.content("{\"longUrl\": \"https://www.google.com\"}"))
 			.andDo(print())
 			.andExpect(status().isOk())
 			.andExpect(content().contentType(MediaType.APPLICATION_JSON))
