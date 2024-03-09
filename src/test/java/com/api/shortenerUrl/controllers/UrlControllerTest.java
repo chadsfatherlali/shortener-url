@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -57,12 +58,18 @@ public class UrlControllerTest {
 	@Autowired
 	private ObjectMapper objectMapper;
 	
+	@Value("${project.domain}")
+	private String domain;
+	
+	private GenericResponse<UrlEntity> response = new GenericResponse<UrlEntity>();
 	private GenericResponsePageable<List<UrlEntity>> urlPageableList = new GenericResponsePageable<List<UrlEntity>>();
 	private String idUrlFacebook = Id.generate();
 	private String idUrlGoogle = Id.generate();
 	private List<UrlEntity> urlList = new ArrayList<>();
-	private String domain = "https://agile-waters-42933-15aa8f254d4e.herokuapp.com/";
 	private Instant createdDate = Instant.now();
+	private UrlEntity createUrl = new UrlEntity();
+	private String longUrl = "https://www.google.com";
+	private String shortUrl = domain + idUrlGoogle;
 	
 	@BeforeEach
 	void init() {
@@ -89,6 +96,10 @@ public class UrlControllerTest {
 		urlPageableList.setData(null);
 		urlPageableList.setErrorMessage(null);
 		urlPageableList.setStatusCode(null);
+		
+		response.setData(null);
+		response.setErrorMessage(null);
+		response.setStatusCode(null);
 	}
 	
 	@Test
@@ -150,12 +161,7 @@ public class UrlControllerTest {
 	}
 	
 	@Test
-	void shouldReturnAurlDocument() throws Exception {
-		GenericResponse<UrlEntity> response = new GenericResponse<UrlEntity>();
-		UrlEntity createUrl = new UrlEntity();
-		String longUrl = "https://www.google.com";
-		String shortUrl = domain + idUrlGoogle;
-		
+	void shouldReturnAurlDocument() throws Exception {	
 		createUrl.setShortUrl(shortUrl);
 		createUrl.setLongUrl(longUrl);
 		createUrl.setId(idUrlGoogle);
@@ -183,6 +189,62 @@ public class UrlControllerTest {
 			.andExpect(jsonPath("$.data.id").value(idUrlGoogle))
 			.andExpect(jsonPath("$.data.longUrl").value(longUrl))
 			.andExpect(jsonPath("$.data.shortUrl").value(shortUrl));
+	}
+	
+	@Test
+	void shouldReturnBadRequestIfBodyNoExist() throws Exception {		
+		createUrl.setShortUrl(shortUrl);
+		createUrl.setLongUrl(longUrl);
+		createUrl.setId(idUrlGoogle);
+		
+		response.setData(createUrl);
+		response.setErrorMessage(null);
+		response.setStatusCode(HttpStatus.BAD_REQUEST);
+
+		when(service.addUrl(any())).thenReturn(response);
+		
+		logger.info("DEBUG:::::::>" + objectMapper.writeValueAsString(response));
+		
+		this.mockMvc.perform(post("/url")
+				.accept(MediaType.APPLICATION_JSON)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(""))
+			.andDo(print())
+			.andExpect(status().isBadRequest())
+			.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+			.andExpect(jsonPath("$.statusCode").exists())
+			.andExpect(jsonPath("$.statusCode").value("BAD_REQUEST"))
+			.andExpect(jsonPath("$.errorMessage").exists())
+			.andExpect(jsonPath("$.errorMessage").value(containsString("Required request body is missing")))
+			.andExpect(jsonPath("$.data").doesNotExist());
+	}
+	
+	@Test
+	void shouldReturnBadRequestIfLongUrlNoExist() throws Exception {		
+		createUrl.setShortUrl(shortUrl);
+		createUrl.setLongUrl(longUrl);
+		createUrl.setId(idUrlGoogle);
+		
+		response.setData(createUrl);
+		response.setErrorMessage(null);
+		response.setStatusCode(HttpStatus.BAD_REQUEST);
+
+		when(service.addUrl(any())).thenReturn(response);
+		
+		logger.info("DEBUG:::::::>" + objectMapper.writeValueAsString(response));
+		
+		this.mockMvc.perform(post("/url")
+				.accept(MediaType.APPLICATION_JSON)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{}"))
+			.andDo(print())
+			.andExpect(status().isBadRequest())
+			.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+			.andExpect(jsonPath("$.statusCode").exists())
+			.andExpect(jsonPath("$.statusCode").value("BAD_REQUEST"))
+			.andExpect(jsonPath("$.errorMessage").exists())
+			.andExpect(jsonPath("$.errorMessage").value(containsString("longUrl parameter is mandatory")))
+			.andExpect(jsonPath("$.data").doesNotExist());
 	}
 	
 }

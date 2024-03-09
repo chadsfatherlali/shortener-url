@@ -17,7 +17,7 @@ public class UrlEntity {
 	private String id;
 	
 	@TextIndexed
-    @NotBlank(message = "longUrl parameter is mandatory ")
+    @NotBlank(message = "longUrl parameter is mandatory")
 	@URL
 	public String longUrl;
 	
