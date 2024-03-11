@@ -1,5 +1,12 @@
-{"properties": [{
-  "name": "database.url",
-  "type": "java.lang.String",
-  "description": "database URL"
-}]}
+{"properties": [
+  {
+    "name": "database.url",
+    "type": "java.lang.String",
+    "description": "database URL"
+  },
+  {
+    "name": "project.domain",
+    "type": "java.lang.String",
+    "description": "domain project"
+  }
+]}
